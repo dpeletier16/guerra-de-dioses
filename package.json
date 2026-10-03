@@ -1,0 +1,29 @@
+{
+  "name": "guerra-de-dioses",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "predev": "npm run assets",
+    "dev": "vite --host 0.0.0.0",
+    "build": "npm run assets && tsc --noEmit && vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "assets": "tsx scripts/export-art.ts",
+    "test": "vitest run",
+    "test:balance": "tsx scripts/balance.ts",
+    "test:e2e": "playwright test",
+    "format": "prettier --write src scripts tests e2e *.ts *.json index.html"
+  },
+  "dependencies": {
+    "phaser": "4.2.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@types/node": "^24.0.0",
+    "prettier": "^3.9.9",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.0",
+    "vitest": "^5.0.3"
+  }
+}
