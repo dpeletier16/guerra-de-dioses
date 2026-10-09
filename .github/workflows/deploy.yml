@@ -74,8 +74,36 @@ jobs:
           path: .pages-site
       - name: Publicar el sitio completo
         id: deployment
-        uses: actions/deploy-pages@v4
+        uses: actions/github-script@v8
         env:
-          # Pages identifies builds by SHA. Branches may share a source commit,
-          # but each merged site must have its own deployment identity.
-          GITHUB_SHA: ${{ steps.site.outputs.commit }}
+          SITE_COMMIT: ${{ steps.site.outputs.commit }}
+        with:
+          script: |
+            // Use the combined site's commit, since multiple source branches
+            // can share the same SHA and Pages deduplicates builds by version.
+            const { owner, repo } = context.repo;
+            const { data } = await github.rest.actions.listWorkflowRunArtifacts({
+              owner, repo, run_id: context.runId
+            });
+            const artifact = data.artifacts.find(a => a.name === 'github-pages' && !a.expired);
+            if (!artifact) throw new Error('No se encontró el artefacto de Pages');
+            const { data: deployment } = await github.rest.repos.createPagesDeployment({
+              owner, repo, artifact_id: artifact.id,
+              pages_build_version: process.env.SITE_COMMIT,
+              oidc_token: await core.getIDToken()
+            });
+            core.setOutput('page_url', deployment.page_url);
+            const deployment_id = deployment.id || deployment.status_url.split('/').pop();
+            for (let attempt = 0; attempt < 120; attempt++) {
+              await new Promise(resolve => setTimeout(resolve, 5000));
+              const { data: result } = await github.rest.repos.getPagesDeployment({
+                owner, repo, pages_deployment_id: deployment_id
+              });
+              core.info(`Pages: ${result.status}`);
+              if (result.status === 'succeed') return;
+              if (['deployment_failed', 'deployment_perms_error', 'deployment_content_failed',
+                   'deployment_cancelled', 'deployment_lost'].includes(result.status)) {
+                throw new Error(`Despliegue fallido: ${result.status}`);
+              }
+            }
+            throw new Error('Se agotó el tiempo de espera de Pages');
