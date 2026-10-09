@@ -55,7 +55,7 @@ jobs:
             git fetch origin gh-pages
             git worktree add --detach .pages-site FETCH_HEAD
           else
-            git worktree add --orphan gh-pages .pages-site
+            git worktree add --orphan -b gh-pages .pages-site
           fi
       - name: Actualizar solo la carpeta de esta rama
         run: npx tsx scripts/pages.ts .pages-site dist "$PUBLISH_BRANCH" "$PUBLISH_COMMIT"
