@@ -60,12 +60,14 @@ jobs:
       - name: Actualizar solo la carpeta de esta rama
         run: npx tsx scripts/pages.ts .pages-site dist "$PUBLISH_BRANCH" "$PUBLISH_COMMIT"
       - name: Conservar el sitio para futuras publicaciones
+        id: site
         run: |
           git -C .pages-site add --all
           if ! git -C .pages-site diff --cached --quiet; then
             git -C .pages-site commit -m "Deploy $PUBLISH_BRANCH at $PUBLISH_COMMIT"
             git -C .pages-site push origin HEAD:gh-pages
           fi
+          printf 'commit=%s\n' "$(git -C .pages-site rev-parse HEAD)" >> "$GITHUB_OUTPUT"
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
@@ -73,3 +75,7 @@ jobs:
       - name: Publicar el sitio completo
         id: deployment
         uses: actions/deploy-pages@v4
+        env:
+          # Pages identifies builds by SHA. Branches may share a source commit,
+          # but each merged site must have its own deployment identity.
+          GITHUB_SHA: ${{ steps.site.outputs.commit }}
