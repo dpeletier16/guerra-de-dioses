@@ -96,7 +96,7 @@ jobs:
             const deployment_id = deployment.id || deployment.status_url.split('/').pop();
             for (let attempt = 0; attempt < 120; attempt++) {
               await new Promise(resolve => setTimeout(resolve, 5000));
-              const { data: result } = await github.rest.repos.getPagesDeployment({
+              const { data: result } = await github.request('GET /repos/{owner}/{repo}/pages/deployments/{pages_deployment_id}', {
                 owner, repo, pages_deployment_id: deployment_id
               });
               core.info(`Pages: ${result.status}`);
